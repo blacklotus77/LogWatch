@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LogWatch</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a; color: #e2e8f0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; padding: 1rem;
+        }
+     .container { width: 100%; max-width: 440px; }
+     .card {
+            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            padding: 2rem; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+     .logo { text-align: center; margin-bottom: 1.5rem; }
+        h1 { 
+            font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+     .subtitle { color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem; }
+     .upload-box {
+            border: 2px dashed #475569; border-radius: 8px; padding: 2rem 1rem;
+            text-align: center; transition: all 0.2s; cursor: pointer; margin-bottom: 1rem;
+        }
+     .upload-box:hover { border-color: #3b82f6; background: #0f172a; }
+        input[type=file] { display: none; }
+     .upload-text { color: #cbd5e1; font-size: 0.9rem; margin-top: 0.5rem; }
+     .file-name { color: #60a5fa; font-size: 0.85rem; margin-top: 0.5rem; word-break: break-all; }
+        button {
+            width: 100%; background: #3b82f6; color: white; border: none;
+            padding: 0.875rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background: #2563eb; }
+        button:disabled { background: #475569; cursor: not-allowed; }
+     .footer { text-align: center; margin-top: 1.5rem; color: #64748b; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <h1>LogWatch</h1>
+                <p class="subtitle">Analyze Apache/Nginx access logs</p>
+            </div>
+            <form method=post enctype=multipart/form-data id="uploadForm">
+                <label for="fileInput" class="upload-box">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <div class="upload-text">Click to select.log or.txt file</div>
+                    <div class="file-name" id="fileName"></div>
+                </label>
+                <input type=file name=file id="fileInput" accept=".log,.txt" required>
+                <button type=submit id="submitBtn" disabled>Analyze Log</button>
+            </form>
+            <div class="footer">Max 16MB • Termux Ready</div>
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileName.textContent = e.target.files[0].name;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
