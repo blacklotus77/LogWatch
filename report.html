@@ -1,0 +1,198 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LogWatch Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a; color: #e2e8f0; padding: 1rem; line-height: 1.6;
+        }
+     .container { max-width: 1100px; margin: 0 auto; }
+     .header {
+            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            padding: 1.5rem; margin-bottom: 1.5rem; display: flex;
+            justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+        }
+     .header-left h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+     .meta { color: #94a3b8; font-size: 0.875rem; }
+     .btn {
+            background: #3b82f6; color: white; text-decoration: none;
+            padding: 0.625rem 1.25rem; border-radius: 8px; font-weight: 600;
+            font-size: 0.9rem; transition: background 0.2s;
+        }
+     .btn:hover { background: #2563eb; }
+     .btn-secondary { background: #475569; }
+     .btn-secondary:hover { background: #64748b; }
+     .stats {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+     .stat-card {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 12px; padding: 1.25rem;
+        }
+     .stat-label {
+            font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;
+            letter-spacing: 0.05em; margin-bottom: 0.5rem;
+        }
+     .stat-value { font-size: 2rem; font-weight: 700; color: #f1f5f9; }
+     .section {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+        }
+     .section-title {
+            font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 0.5rem; justify-content: space-between;
+        }
+     .badge {
+            display: inline-block; padding: 0.125rem 0.5rem; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 600;
+        }
+     .badge-red { background: #7f1d1d; color: #fca5a5; }
+     .badge-yellow { background: #78350f; color: #fcd34d; }
+     .badge-green { background: #14532d; color: #86efac; }
+     .badge-gray { background: #374151; color: #d1d5db; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        thead { background: #0f172a; }
+        th {
+            text-align: left; padding: 0.75rem; font-weight: 600;
+            color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;
+        }
+        td { padding: 0.75rem; border-top: 1px solid #334155; }
+        tr:hover { background: #0f172a; }
+     .code {
+            font-family: 'SF Mono', Monaco, monospace; background: #0f172a;
+            padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; color: #cbd5e1;
+        }
+     .list { list-style: none; }
+     .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem; border-bottom: 1px solid #334155;
+        }
+     .list-item:last-child { border-bottom: none; }
+     .list-value { font-weight: 600; color: #60a5fa; }
+     .empty { text-align: center; color: #64748b; padding: 2rem; }
+     .sparkline { width: 100%; height: 40px; margin-top: 0.5rem; }
+        @media (max-width: 640px) {
+         .header { flex-direction: column; align-items: flex-start; }
+         .stats { grid-template-columns: 1fr; }
+            table { font-size: 0.8rem; }
+            td, th { padding: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Log Analysis Report</h1>
+                <div class="meta">{{ filename }} • {{ lines }} lines processed</div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+                {% if suspicious_ips %}
+                <a href="/export?ips={{ suspicious_ips }}" class="btn btn-secondary">Export IPs</a>
+                {% endif %}
+                <a href="/" class="btn">New Analysis</a>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Requests</div>
+                <div class="stat-value">{{ lines }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unique IPs</div>
+                <div class="stat-value">{{ unique_ips }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Suspicious</div>
+                <div class="stat-value">{{ suspicious | length }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Status Codes</div>
+                <div class="stat-value">{{ status_codes | length }}</div>
+                <svg class="sparkline" viewBox="0 0 24 12">
+                    <polyline fill="none" stroke="#3b82f6" stroke-width="1.5" 
+                        points="{% for h in hourly_data %} {{ loop.index0 }},{{ 12 - (h / (hourly_data|max or 1) * 10) }} {% endfor %}"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Top IPs</h2>
+            {% if top_ips %}
+            <ul class="list">
+                {% for ip, count in top_ips %}
+                <li class="list-item">
+                    <span class="code">{{ ip }}</span>
+                    <span class="list-value">{{ count }} reqs</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty">No IPs found</div>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Status Codes</h2>
+            {% if status_codes %}
+            <ul class="list">
+                {% for code, count in status_codes %}
+                <li class="list-item">
+                    <span>
+                        {% if code.startswith('2') %}<span class="badge badge-green">{{ code }}</span>
+                        {% elif code.startswith('4') %}<span class="badge badge-yellow">{{ code }}</span>
+                        {% elif code.startswith('5') %}<span class="badge badge-red">{{ code }}</span>
+                        {% else %}<span class="badge badge-gray">{{ code }}</span>{% endif %}
+                    </span>
+                    <span class="list-value">{{ count }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty">No status codes found</div>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                <span>Suspicious Activity</span>
+                {% if suspicious %}<span class="badge badge-red">{{ suspicious | length }}</span>{% endif %}
+            </h2>
+            {% if suspicious %}
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th><th>IP</th><th>Method</th><th>Path</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in suspicious %}
+                        <tr>
+                            <td style="white-space:nowrap;color:#94a3b8">{{ s.time }}</td>
+                            <td><span class="code">{{ s.ip }}</span></td>
+                            <td>{{ s.method }}</td>
+                            <td><span class="code">{{ s.path[:60] }}</span></td>
+                            <td>
+                                {% if s.status.startswith('4') %}<span class="badge badge-yellow">{{ s.status }}</span>
+                                {% elif s.status.startswith('5') %}<span class="badge badge-red">{{ s.status }}</span>
+                                {% else %}<span class="badge badge-gray">{{ s.status }}</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty">No suspicious activity detected</div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
